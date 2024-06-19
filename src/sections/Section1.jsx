@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -21,61 +21,22 @@ export default function Section1() {
     opacity: 0.6,
   });
 
-  const handleSelectFolder = async () => {
+  const handleSelectFolder = async (folder) => {
     try {
       const selectedPath = await open({
         directory: true,
         multiple: false,
       });
       if (selectedPath) {
-        setFormData({ ...formData, output: selectedPath });
+        if(folder=='output') setFormData({ ...formData, output: selectedPath });
+        else if(folder=='gridCellFolder')  setFormData2({ ...formData2, gridCellFolder: selectedPath });
+        else if(folder=='inputFolder') setFormData2({ ...formData2, inputFolder: selectedPath });
+        else if(folder=='outputFolder') setFormData2({ ...formData2, outputFolder: selectedPath });
       }
     } catch (error) {
       console.error("Error selecting folder:", error);
     }
   };
-
-  const handleSelectFolder2 = async () => {
-    try {
-      const selectedPath = await open({
-        directory: true,
-        multiple: false,
-      });
-      if (selectedPath) {
-        setFormData2({ ...formData2, gridCellFolder: selectedPath });
-      }
-    } catch (error) {
-      console.error("Error selecting folder:", error);
-    }
-  };
-  const handleSelectFolder3 = async () => {
-    try {
-      const selectedPath = await open({
-        directory: true,
-        multiple: false,
-      });
-      if (selectedPath) {
-        setFormData2({ ...formData2, inputFolder: selectedPath });
-      }
-    } catch (error) {
-      console.error("Error selecting folder:", error);
-    }
-  };
-  const handleSelectFolder4 = async () => {
-    try {
-      const selectedPath = await open({
-        directory: true,
-        multiple: false,
-      });
-      if (selectedPath) {
-        setFormData2({ ...formData2, outputFolder: selectedPath });
-      }
-    } catch (error) {
-      console.error("Error selecting folder:", error);
-    }
-  };
-
-  useEffect(() => console.log(formData), [formData]);
 
   const handleClick = async () => {
     setLoading(true);
@@ -115,6 +76,7 @@ export default function Section1() {
   };
 
   const handleClick2 = async () => {
+    setLoading(true);
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("gridCellFolder", formData2.gridCellFolder);
@@ -139,6 +101,8 @@ export default function Section1() {
       toast.error("Error submitting form. Please try again.", {
         position: toast.POSITION.TOP_RIGHT,
       });
+    } finally{
+      setLoading(false);
     }
   };
 
@@ -200,7 +164,7 @@ export default function Section1() {
             />
           </div>
           <div>
-            <button style={{ width: "236px" }} onClick={handleSelectFolder}>
+            <button style={{ width: "236px" }} onClick={()=>handleSelectFolder('output')}>
               Select Grid Cell Folder
             </button>
             <p
@@ -271,7 +235,7 @@ export default function Section1() {
               />
             </div>
           <div >
-            <button style={{ width: "236px" }} onClick={handleSelectFolder2}>
+            <button style={{ width: "236px" }} onClick={()=>handleSelectFolder('gridCellFolder')}>
               Select Grid Cell Folder
             </button>
             <p style={{
@@ -282,7 +246,7 @@ export default function Section1() {
               }} > {formData2.gridCellFolder}</p>
           </div>
           <div>
-            <button style={{ width: "236px" }} onClick={handleSelectFolder3}>Select Input Folder</button>
+            <button style={{ width: "236px" }} onClick={()=>handleSelectFolder('inputFolder')}>Select Input Folder</button>
             <p style={{
                 color: "rgb(189, 189, 189)",
                 margin: 3,
@@ -291,7 +255,7 @@ export default function Section1() {
               }}> {formData2.inputFolder}</p>
           </div>
           <div>
-            <button style={{ width: "236px" }} onClick={handleSelectFolder4}>Select Output Folder</button>
+            <button style={{ width: "236px" }} onClick={()=>handleSelectFolder('outputFolder')}>Select Output Folder</button>
             <p style={{
                 color: "rgb(189, 189, 189)",
                 margin: 3,
