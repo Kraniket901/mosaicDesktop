@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import axios from "axios";
 import { toast } from "react-toastify";
 
 export default function Section1() {
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     rows: 0,
     cols: 0,
+    width: 0,
+    height: 0,
     output: "",
     image: null,
   });
   const [formData2, setFormData2] = useState({
-    gridCellFolder:  "",
-    inputFolder:  "",
+    gridCellFolder: "",
+    inputFolder: "",
     outputFolder: "",
     opacity: 0.6,
   });
@@ -72,7 +75,10 @@ export default function Section1() {
     }
   };
 
+  useEffect(() => console.log(formData), [formData]);
+
   const handleClick = async () => {
+    setLoading(true);
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("rows", formData.rows);
@@ -80,11 +86,19 @@ export default function Section1() {
       formDataToSend.append("output", formData.output);
       formDataToSend.append("image", formData.image);
       const response = await axios.post(
-        "http://127.0.0.1:3000/mosaic",
+        "http://127.0.0.1:8000/mosaic",
         formDataToSend
       );
       console.log("Response:", response.data);
-      toast.success("Form submitted successfully!");
+      toast.success("Form Submitted successfully!");
+
+      await axios.post('http://localhost:8000/backdrop', {
+        rows: parseInt(formData.rows),
+        cols: parseInt(formData.cols),
+        width: parseInt(formData.width),
+        height: parseInt(formData.height),
+      });
+      toast.success("Backdrop Image Added successfully!");
       setFormData({
         rows: 0,
         cols: 0,
@@ -94,11 +108,12 @@ export default function Section1() {
       setPage(2);
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Error submitting form. Please try again.", {
-        position: toast.POSITION.TOP_RIGHT,
-      });
+      toast.error("Error submitting form. Please try again.");
+    } finally{
+      setLoading(false);
     }
   };
+
   const handleClick2 = async () => {
     try {
       const formDataToSend = new FormData();
@@ -107,7 +122,7 @@ export default function Section1() {
       formDataToSend.append("outputFolder", formData2.outputFolder);
       formDataToSend.append("opacity", formData2.opacity);
       const response = await axios.post(
-        "http://127.0.0.1:3000/start-overlay",
+        "http://127.0.0.1:8000/start-overlay",
         formDataToSend
       );
       console.log("Response:", response.data);
@@ -128,110 +143,188 @@ export default function Section1() {
   };
 
   return (
-    <>
+    <div
+      style={{ display: "flex", justifyContent: "center", padding: "3rem 0" }}
+    >
       {page === 1 && (
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            rowGap: 10,
+            rowGap: "20px",
             justifyContent: "center",
-            alignItems: "center",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              columnGap: 10,
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
-            <div>
-              <p style={{ color: "gray", margin: 0 }}>Enter Number of Rows</p>
-              <input
-                type="number"
-                style={{ width: "200px" }}
-                onChange={(e) =>
-                  setFormData({ ...formData, rows: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <p style={{ color: "gray", margin: 0 }}>
-                Enter Number of Columns
-              </p>
-              <input
-                type="number"
-                style={{ width: "200px" }}
-                onChange={(e) =>
-                  setFormData({ ...formData, cols: e.target.value })
-                }
-              />
-            </div>
+          <div>
+            <p style={{ color: "rgb(189, 189, 189)", margin: 3 }}>
+              Enter Number of Rows
+            </p>
+            <input
+              type="number"
+              onChange={(e) =>
+                setFormData({ ...formData, rows: e.target.value })
+              }
+            />
           </div>
-          <div style={{ display: "flex", columnGap: 10 }}>
-            <button onClick={handleSelectFolder}>Select Folder</button>
-            <p style={{ color: "GrayText" }}> {formData.output}</p>
+          <div>
+            <p style={{ color: "rgb(189, 189, 189)", margin: 3 }}>
+              Enter Number of Columns
+            </p>
+            <input
+              type="number"
+              onChange={(e) =>
+                setFormData({ ...formData, cols: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={{ color: "rgb(189, 189, 189)", margin: 3 }}>
+              Enter Width
+            </p>
+            <input
+              type="number"
+              onChange={(e) =>
+                setFormData({ ...formData, width: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={{ color: "rgb(189, 189, 189)", margin: 3 }}>
+              Enter Height
+            </p>
+            <input
+              type="number"
+              onChange={(e) =>
+                setFormData({ ...formData, height: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <button style={{ width: "236px" }} onClick={handleSelectFolder}>
+              Select Grid Cell Folder
+            </button>
+            <p
+              style={{
+                color: "rgb(189, 189, 189)",
+                margin: 3,
+                padding: 0,
+                fontSize: "14px",
+              }}
+            >
+              {formData.output}
+            </p>
           </div>
           <div>
             <input
               type="file"
+              id="fileInput"
               onChange={(e) => {
                 setFormData({ ...formData, image: e.target.files[0] });
               }}
+              style={{ display: "none" }}
             />
+            <button
+              type="button"
+              style={{ width: "236px" }}
+              onClick={() => document.getElementById("fileInput").click()}
+            >
+              Choose Mosaic Image
+            </button>
+            <p
+              style={{
+                color: "rgb(189, 189, 189)",
+                padding: 0,
+                fontSize: "14px",
+                margin: 3,
+              }}
+            >
+              {formData.image?.name}
+            </p>
           </div>
-          <button onClick={handleClick}>Submit</button>
+          <div>
+            <button
+              style={{ backgroundColor: "#0F52BA",width: "236px" }}
+              onClick={handleClick}
+              disabled={loading}
+            >
+              {loading?'Please Wait ...':'Submit'}
+            </button>
+          </div>
         </div>
       )}
       {page === 2 && (
         <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          rowGap: 10,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
           style={{
             display: "flex",
-            columnGap: 10,
+            flexDirection: "column",
+            rowGap: "20px",
             justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
           }}
         >
-          <div>
-            <p style={{ color: "gray", margin: 0 }}>Enter Opacity</p>
-            <input
-              type="number"
-              style={{ width: "200px" }}
-              onChange={(e) =>
-                setFormData2({ ...formData2, opacity: e.target.value })
-              }
-            />
+            <div>
+              <p style={{ color: "rgb(189, 189, 189)", margin: 3 }}>Enter Opacity</p>
+              <input
+                type="number"
+                onChange={(e) =>
+                  setFormData2({ ...formData2, opacity: e.target.value })
+                }
+              />
+            </div>
+          <div >
+            <button style={{ width: "236px" }} onClick={handleSelectFolder2}>
+              Select Grid Cell Folder
+            </button>
+            <p style={{
+                color: "rgb(189, 189, 189)",
+                margin: 3,
+                padding: 0,
+                fontSize: "14px",
+              }} > {formData2.gridCellFolder}</p>
           </div>
+          <div>
+            <button style={{ width: "236px" }} onClick={handleSelectFolder3}>Select Input Folder</button>
+            <p style={{
+                color: "rgb(189, 189, 189)",
+                margin: 3,
+                padding: 0,
+                fontSize: "14px",
+              }}> {formData2.inputFolder}</p>
+          </div>
+          <div>
+            <button style={{ width: "236px" }} onClick={handleSelectFolder4}>Select Output Folder</button>
+            <p style={{
+                color: "rgb(189, 189, 189)",
+                margin: 3,
+                padding: 0,
+                fontSize: "14px",
+              }}> {formData2.outputFolder}</p>
+          </div>
+          <button style={{ width: "236px", backgroundColor: "#0F52BA" }} onClick={handleClick2} disabled={loading}>
+          {loading?'Please Wait ...':'Submit'}
+            </button>
         </div>
-        <div style={{ display: "flex", columnGap: 10 }}>
-          <button onClick={handleSelectFolder2}>Select Grid Cell Folder</button>
-          <p style={{ color: "GrayText" }}> {formData2.gridCellFolder}</p>
-        </div>
-        <div style={{ display: "flex", columnGap: 10 }}>
-          <button onClick={handleSelectFolder3}>Select Input Folder</button>
-          <p style={{ color: "GrayText" }}> {formData2.inputFolder}</p>
-        </div>
-        <div style={{ display: "flex", columnGap: 10 }}>
-          <button onClick={handleSelectFolder4}>Select Output Folder</button>
-          <p style={{ color: "GrayText" }}> {formData2.outputFolder}</p>
-        </div>
-        <button onClick={handleClick2}>Submit</button>
-      </div>
       )}
-      {page===3 && <p style={{display:"flex", justifyContent:"center", alignSelf:"center", alignItems:"center",color:"GrayText"}}>Server Is Ready! Start Adding Pinture in Input Folder</p>}
-    </>
+      {page === 3 && (
+        <div style={{display:"flex", flexDirection:"column",justifyContent:"center", alignItems:"center"}}>
+        <p
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignSelf: "center",
+            alignItems: "center",
+            color: "White",
+            fontSize:"1.2rem",
+            textAlign:"center",
+            lineHeight:"50px"
+          }}
+        >
+          Server Is Ready !! <br /> Start Adding Pictures in Input Folder
+        </p>
+        <button style={{ width: "236px", backgroundColor: "#0F52BA" }} onClick={()=>window.location.reload()} disabled={loading}>
+          Regenerate
+         </button>
+        </div>
+      )}
+    </div>
   );
 }
